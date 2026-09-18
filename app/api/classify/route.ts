@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { classify } from "@/lib/llm";
+import { passFromCookieHeader } from "@/lib/pass";
 import type { ClassifyRequestBody, Lang } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -33,9 +34,11 @@ export async function POST(req: Request) {
   }
 
   // Free-tier cap. Sample dumps are always allowed so the demo works.
-  // Paid unlock is a v0 placeholder — until payments are live, everyone is on free.
+  // A valid paid pass (HttpOnly cookie set after Lemon Squeezy checkout —
+  // see lib/pass.ts) removes the cap for its duration.
+  const pass = passFromCookieHeader(req.headers.get("cookie"));
   const limit = freeCharLimit();
-  if (!body.sample && text.length > limit) {
+  if (!pass && !body.sample && text.length > limit) {
     return NextResponse.json(
       {
         error: "FREE_LIMIT_EXCEEDED",
