@@ -31,6 +31,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     delegateHint: "Someone else's job. Hand it off.",
     seePricing: "See pricing",
     back: "← DropList",
+    passActiveNote: "Pass active — no character limit until {d}.",
+    paidSuccess: "Payment received — your pass is active. Dump away.",
+    paidInvalid:
+      "We couldn't verify that payment link. If you just paid, contact us — your money is safe with Lemon Squeezy.",
   },
   hi: {
     appTitle: "आपकी not-to-do लिस्ट",
@@ -61,6 +65,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     delegateHint: "यह किसी और का काम है। सौंप दो।",
     seePricing: "प्राइसिंग देखें",
     back: "← DropList",
+    passActiveNote: "पास एक्टिव है — {d} तक कोई कैरेक्टर लिमिट नहीं।",
+    paidSuccess: "पेमेंट मिल गई — आपका पास एक्टिव है। खुलकर लिखिए।",
+    paidInvalid:
+      "यह पेमेंट लिंक वेरिफ़ाई नहीं हो पाया। अगर आपने अभी पेमेंट की है तो हमसे संपर्क करें — आपका पैसा Lemon Squeezy के पास सुरक्षित है।",
   },
 };
 

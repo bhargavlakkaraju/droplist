@@ -31,6 +31,8 @@ const BUCKET_STYLES: Record<
   },
 };
 
+type PassStatus = { active: boolean; tier?: "single" | "week"; expiresAt?: number };
+
 export default function BrainDump() {
   const [lang, setLang] = useState<Lang>("en");
   const [text, setText] = useState("");
@@ -40,7 +42,33 @@ export default function BrainDump() {
   const [overLimit, setOverLimit] = useState(false);
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState<"pdf" | "image" | null>(null);
+  const [pass, setPass] = useState<PassStatus>({ active: false });
+  const [paidBanner, setPaidBanner] = useState<"success" | "invalid" | null>(null);
   const lastSubmitRef = useRef<{ text: string; sample: boolean } | null>(null);
+
+  // Paid pass: the droplist_pass cookie is HttpOnly, so ask the server whether
+  // one is active (UI only — enforcement lives in /api/classify). Also surface
+  // the ?paid= result of the Lemon Squeezy success redirect once, then clean
+  // the URL.
+  useEffect(() => {
+    void fetch("/api/pass/status")
+      .then((res) => res.json() as Promise<PassStatus>)
+      .then(setPass)
+      .catch(() => {});
+    const params = new URLSearchParams(window.location.search);
+    const paid = params.get("paid");
+    if (paid === "1") setPaidBanner("success");
+    else if (paid === "invalid") setPaidBanner("invalid");
+    if (paid) {
+      params.delete("paid");
+      const qs = params.toString();
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + (qs ? `?${qs}` : ""),
+      );
+    }
+  }, []);
 
   // Restore last result (nothing sensitive — optional convenience, v0 spec).
   useEffect(() => {
@@ -240,6 +268,17 @@ export default function BrainDump() {
       <h1 className="text-3xl font-extrabold tracking-tight">{t(lang, "appTitle")}</h1>
       <p className="mt-2 text-zinc-600">{t(lang, "appSubtitle")}</p>
 
+      {paidBanner === "success" && (
+        <p className="mt-4 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-900">
+          {t(lang, "paidSuccess")}
+        </p>
+      )}
+      {paidBanner === "invalid" && (
+        <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {t(lang, "paidInvalid")}
+        </p>
+      )}
+
       <div className="mt-6">
         <textarea
           value={text}
@@ -252,10 +291,30 @@ export default function BrainDump() {
           className="w-full resize-y rounded-xl border border-zinc-300 p-4 font-mono text-sm leading-relaxed text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none"
         />
         <div className="mt-1 flex items-center justify-between text-xs text-zinc-500">
-          <span>{t(lang, "charLimitNote", { n: FREE_CHAR_LIMIT })}</span>
-          <span className={charCount > FREE_CHAR_LIMIT ? "font-semibold text-red-600" : ""}>
-            {charCount}/{FREE_CHAR_LIMIT}
-          </span>
+          {pass.active ? (
+            <>
+              <span className="font-medium text-green-700">
+                {t(lang, "passActiveNote", {
+                  d: pass.expiresAt
+                    ? new Date(pass.expiresAt).toLocaleString(
+                        lang === "hi" ? "hi-IN" : "en-IN",
+                        { dateStyle: "medium", timeStyle: "short" },
+                      )
+                    : "—",
+                })}
+              </span>
+              <span>{charCount}</span>
+            </>
+          ) : (
+            <>
+              <span>{t(lang, "charLimitNote", { n: FREE_CHAR_LIMIT })}</span>
+              <span
+                className={charCount > FREE_CHAR_LIMIT ? "font-semibold text-red-600" : ""}
+              >
+                {charCount}/{FREE_CHAR_LIMIT}
+              </span>
+            </>
+          )}
         </div>
       </div>
 

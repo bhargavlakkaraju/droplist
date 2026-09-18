@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 type Tier = {
-  id: string;
-  provider: "razorpay" | "stripe";
+  tier: "single" | "week";
+  market: "in" | "global";
   name: string;
   price: string;
   blurb: string;
@@ -12,18 +12,20 @@ type Tier = {
   highlight?: boolean;
 };
 
+// All four cards check out through Lemon Squeezy — the tier/market pair maps
+// to one of four one-time variants configured in the merchant dashboard.
 const TIERS: Tier[] = [
   {
-    id: "single",
-    provider: "razorpay",
+    tier: "single",
+    market: "in",
     name: "Single Pass · India",
     price: "₹49",
-    blurb: "One full-size brain dump, fully unlocked.",
-    features: ["Unlimited characters for one dump", "PDF + share card", "EN + Hindi"],
+    blurb: "24 hours of full-size brain dumps.",
+    features: ["Unlimited characters for 24h", "PDF + share card", "EN + Hindi"],
   },
   {
-    id: "week",
-    provider: "razorpay",
+    tier: "week",
+    market: "in",
     name: "Week Pass · India",
     price: "₹199",
     blurb: "Seven days of unlimited dumps.",
@@ -31,16 +33,16 @@ const TIERS: Tier[] = [
     highlight: true,
   },
   {
-    id: "single",
-    provider: "stripe",
+    tier: "single",
+    market: "global",
     name: "Single Pass · Global",
     price: "$1",
-    blurb: "One full-size brain dump, fully unlocked.",
-    features: ["Unlimited characters for one dump", "PDF + share card", "EN + Hindi"],
+    blurb: "24 hours of full-size brain dumps.",
+    features: ["Unlimited characters for 24h", "PDF + share card", "EN + Hindi"],
   },
   {
-    id: "week",
-    provider: "stripe",
+    tier: "week",
+    market: "global",
     name: "Week Pass · Global",
     price: "$5",
     blurb: "Seven days of unlimited dumps.",
@@ -53,26 +55,26 @@ export default function Pricing() {
   const [busy, setBusy] = useState<string | null>(null);
 
   async function startCheckout(tier: Tier) {
-    const key = `${tier.provider}-${tier.id}`;
+    const key = `${tier.market}-${tier.tier}`;
     setBusy(key);
     setNotice(null);
     try {
-      const res = await fetch(`/api/checkout/${tier.provider}`, {
+      const res = await fetch("/api/checkout/lemonsqueezy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tier.id }),
+        body: JSON.stringify({ tier: tier.tier, market: tier.market }),
       });
       const data = (await res.json()) as { message?: string; url?: string };
-      if (data.url) {
+      if (res.ok && data.url) {
         window.location.href = data.url;
         return;
       }
       setNotice(
         data.message ??
-          "Checkout is not live yet — this build ships with payment placeholders.",
+          "Checkout is not live yet — Lemon Squeezy is not configured.",
       );
     } catch {
-      setNotice("Checkout is not live yet — this build ships with payment placeholders.");
+      setNotice("Checkout is not live yet — Lemon Squeezy is not configured.");
     } finally {
       setBusy(null);
     }
@@ -82,7 +84,7 @@ export default function Pricing() {
     <div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {TIERS.map((tier) => {
-          const key = `${tier.provider}-${tier.id}`;
+          const key = `${tier.market}-${tier.tier}`;
           return (
             <div
               key={key}
@@ -128,6 +130,7 @@ export default function Pricing() {
       )}
       <p className="mt-4 text-sm text-zinc-500">
         Free tier: one sample demo, or your own dump up to 600 characters.
+        Payments handled by Lemon Squeezy.
       </p>
     </div>
   );
